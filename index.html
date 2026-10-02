@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RHESE CARDS</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ec4899">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#fff0f6;--card:#fff;--pink:#ec4899;--dark:#be185d;--soft:#fbcfe8;--text:#4a1d33}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+#app{max-width:560px;margin:0 auto;padding:18px}
+h1{margin:6px 0 0;color:var(--dark);font-size:28px;letter-spacing:1px}
+h2{color:var(--dark);margin:8px 0}
+.sub{margin:2px 0 16px;color:#9d4b72}
+.card{background:var(--card);border-radius:18px;padding:16px;margin:10px 0;box-shadow:0 3px 10px #ec489922;display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer}
+.card span{color:#9d4b72;font-size:14px}
+.row{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}
+input{flex:1;min-width:0;padding:12px;border:2px solid var(--soft);border-radius:12px;font-size:16px;background:#fff;color:var(--text)}
+input:focus{outline:none;border-color:var(--pink)}
+button{background:var(--pink);color:#fff;border:0;border-radius:12px;padding:12px 18px;font-size:16px;font-weight:600;cursor:pointer}
+button.alt{background:var(--soft);color:var(--dark)}
+button.x{background:none;color:#c0568a;padding:4px 10px;font-size:20px}
+.flip{background:linear-gradient(135deg,#f9a8d4,#ec4899);color:#fff;border-radius:24px;min-height:240px;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:22px;font-weight:600;margin:16px 0;box-shadow:0 8px 20px #ec489944;cursor:pointer;user-select:none}
+.flip.back{background:#fff;color:var(--dark);border:3px solid var(--pink)}
+.hint{text-align:center;color:#9d4b72;font-size:14px}
+.big{font-size:56px;text-align:center;margin:20px 0}
+.center{text-align:center}
+</style></head>
+<body><div id="app"></div>
+<script>
+const K='rhese-cards';let S;
+try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+if(!S)S={decks:[{id:1,name:'Sample: Biology',cards:[{q:'What is the powerhouse of the cell?',a:'Mitochondria'},{q:'What is photosynthesis?',a:'Plants turn light, water and CO₂ into sugar and oxygen'}]}]};
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+const A=document.getElementById('app');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const deck=id=>S.decks.find(d=>d.id===id);
+let cur=null,q=[],i=0,shown=false,got=0;
+
+function home(){
+  cur=null;
+  A.innerHTML=`<h1>🌸 RHESE CARDS</h1><p class="sub">Your cute study buddy</p>`+
+  (S.decks.length?S.decks.map(d=>`<div class="card" onclick="open_(${d.id})"><b>${esc(d.name)}</b><span>${d.cards.length} cards ›</span></div>`).join(''):'<p class="hint">No subjects yet. Add your first one below 💕</p>')+
+  `<div class="row"><input id="nd" placeholder="New subject (e.g. Math)"><button onclick="addDeck()">Add</button></div>`;
+}
+function addDeck(){const n=document.getElementById('nd').value.trim();if(!n)return;S.decks.push({id:Date.now(),name:n,cards:[]});save();home()}
+function open_(id){
+  cur=id;const d=deck(id);
+  A.innerHTML=`<button class="alt" onclick="home()">‹ Back</button><h2>${esc(d.name)}</h2>`+
+  `<button onclick="study()" ${d.cards.length?'':'disabled style="opacity:.5"'}>▶ Study ${d.cards.length} cards</button>
+  <div class="row"><input id="cq" placeholder="Question / term"><input id="ca" placeholder="Answer"><button onclick="addCard()">Add card</button></div>`+
+  d.cards.map((c,n)=>`<div class="card" style="cursor:default"><div><b>${esc(c.q)}</b><br><span>${esc(c.a)}</span></div><button class="x" onclick="delCard(${n})">✕</button></div>`).join('')+
+  `<p class="center"><button class="alt" onclick="delDeck()">Delete this subject</button></p>`;
+}
+function addCard(){const a=document.getElementById('cq').value.trim(),b=document.getElementById('ca').value.trim();if(!a||!b)return;deck(cur).cards.push({q:a,a:b});save();open_(cur)}
+function delCard(n){deck(cur).cards.splice(n,1);save();open_(cur)}
+function delDeck(){if(confirm('Delete this subject and all its cards?')){S.decks=S.decks.filter(d=>d.id!==cur);save();home()}}
+function study(){
+  q=[...deck(cur).cards].sort(()=>Math.random()-.5);i=0;got=0;shown=false;card();
+}
+function card(){
+  if(i>=q.length){
+    A.innerHTML=`<div class="big">🎉</div><h2 class="center">All done!</h2><p class="center">You knew ${got} of ${q.length} cards.</p><div class="row"><button class="alt" onclick="open_(cur)">Back</button><button onclick="study()">Study again</button></div>`;return;
+  }
+  const c=q[i];
+  A.innerHTML=`<button class="alt" onclick="open_(cur)">✕ Stop</button><p class="hint">Card ${i+1} of ${q.length}</p>
+  <div class="flip ${shown?'back':''}" onclick="shown=!shown;card()">${esc(shown?c.a:c.q)}</div>
+  <p class="hint">${shown?'Did you know it?':'Tap the card to see the answer'}</p>`+
+  (shown?`<div class="row"><button class="alt" style="flex:1" onclick="next(0)">Not yet</button><button style="flex:1" onclick="next(1)">Got it 💖</button></div>`:'');
+}
+function next(k){got+=k;i++;shown=false;card()}
+home();
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script></body></html>
